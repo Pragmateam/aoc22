@@ -1,6 +1,6 @@
 # Quick Links
 
-[Calendar][aoc-cal] [About][aoc] [Leaderboard][aoc-lead] [Solving it fast][hyper-neutrino]
+🗓[Calendar][aoc-cal] ❓[About][aoc] 🏃[Leaderboard][aoc-lead] ⚛[Solving it fast][hyper-neutrino]
 
 [aoc-cal]: https://adventofcode.com/2022
 [aoc-lead]: https://adventofcode.com/2022/leaderboard
