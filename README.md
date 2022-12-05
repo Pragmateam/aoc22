@@ -1,5 +1,3 @@
-# Quick Links
-
 [Calendar][aoc-cal] 🗓 - [About][aoc] ❓ - [Leaderboard][aoc-lead] 🏃 - [Solving it fast][hyper-neutrino] ⚛
 
 [aoc-cal]: https://adventofcode.com/2022
