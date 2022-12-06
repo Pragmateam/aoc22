@@ -1,7 +1,5 @@
 const assert = require("assert");
-const { readFileInput, pipe } = require("./helpers");
-
-const log = console.log;
+const { readFileInput, pipe, log } = require("./helpers");
 
 function readInput(input) {
   return readFileInput(__filename)(input);

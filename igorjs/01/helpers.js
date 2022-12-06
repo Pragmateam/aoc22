@@ -1,6 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 
+function log() {
+  console.log.apply(console, arguments);
+}
+
 function pipe(...fns) {
   return function (value) {
     return fns.reduce((acc, fn) => fn(acc), value);
@@ -36,4 +40,5 @@ module.exports = {
   readFileInput,
   trace,
   pipe,
+  log,
 };
