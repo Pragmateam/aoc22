@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { readFileInput, pipe } = require("../utils");
+const { readFileInput, pipe } = require("./helpers");
 
 const log = console.log;
 
@@ -54,7 +54,7 @@ function getCalories() {
   };
 }
 
-(async function main() {
+(function main() {
   assert.strictEqual(getCalories("test/1").max, 24000);
   assert.strictEqual(getCalories("test/1").sum, 45000);
 
