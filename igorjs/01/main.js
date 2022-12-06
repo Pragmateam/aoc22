@@ -1,7 +1,10 @@
-const fs = require("fs/promises");
+const assert = require("assert");
+const { readFileInput, pipe } = require("../utils");
 
-function readInput(filename) {
-  return fs.readFile(filename, { encoding: "utf8" }).catch(console.error);
+const log = console.log;
+
+function readInput(input) {
+  return readFileInput(__filename)(input);
 }
 
 function parseContents(contents) {
@@ -10,33 +13,50 @@ function parseContents(contents) {
     .map((group) => group.split(/\r?\n/g).map((number) => Number(number)));
 }
 
-function reduceSort(groups) {
+function mapReduceSort(groups) {
   return groups
     .map((g) => g.reduce((sum, value) => sum + value, 0))
     .sort((a, b) => b - a);
 }
 
-function max() {
-  return Math.max(...Array.from(arguments));
+function max(values) {
+  return Math.max(...Array.from(values));
 }
 
-function sum() {
-  return Array.from(arguments).reduce((sum, value) => sum + value, 0);
+function sum(values) {
+  return Array.from(values).reduce((sum, value) => sum + value, 0);
+}
+
+function top3(values) {
+  return Array.from(values).slice(0, 3);
+}
+
+function getCalories() {
+  // prettier-ignore
+  const getMaxCalories = pipe(
+    readInput,
+    parseContents,
+    mapReduceSort,
+    max
+  );
+
+  const getSumCalories = pipe(
+    readInput,
+    parseContents,
+    mapReduceSort,
+    top3,
+    sum
+  );
+
+  return {
+    max: getMaxCalories(...arguments),
+    sum: getSumCalories(...arguments),
+  };
 }
 
 (async function main() {
-  if (process.argv.length !== 3) {
-    console.error("Usage: node main.js <input file>");
-    process.exit(1);
-  }
+  assert.strictEqual(getCalories("test/1").max, 24000);
+  assert.strictEqual(getCalories("test/1").sum, 45000);
 
-  const fileContents = await readInput(process.argv[2]);
-
-  const groups = parseContents(fileContents);
-
-  const elves = reduceSort(groups);
-  const top3elves = elves.slice(0, 3);
-
-  console.log("calories (max)", max(...elves));
-  console.log("calories (top 3)", sum(...top3elves));
+  log(getCalories("input").sum);
 })();
