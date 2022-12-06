@@ -4,14 +4,13 @@ Advent of Code 2022
 
 ## Tools
 
-- Language: [Typescript][typescript]
+- Language: Javascript
 - Environment: [VSCode][vscode]
 
 ## How to use
 
 ```
-npx ts-node <folder>/main.ts
+node <folder>/main.js
 ```
 
-[typescript]: https://www.typescriptlang.org/
 [vscode]: https://code.visualstudio.com/
