@@ -9,22 +9,6 @@
    (λ (line) (map string->number (string-split line ",")))
    (string-split (file->string input) "\n")))
 
-(define (center cubes)
-  (define xs 0)
-  (define ys 0)
-  (define zs 0)
-
-  (define l (length cubes))
-
-  (for ([cube cubes])
-    (match cube
-      [(list x y z)
-       (set! xs (+ xs x))
-       (set! ys (+ ys y))
-       (set! zs (+ zs z))]))
-
-  (values (quotient xs l) (quotient ys l)))
-
 (define (neighbours cube)
   (match cube
     [(list x y z)
@@ -75,14 +59,8 @@
              (count-surface-faces cubes s)))
 
 (define (surface-area cubes)
-  (define-values (cx cy) (center cubes))
-
   ; Find cube right at the surface by using max along a coord
-  (define surface-cube (first
-                        (sort
-                         (filter (λ (c) (match c [(list cx cy _) #t] [_ #f])) cubes)
-                         >
-                         #:key third)))
+  (define surface-cube (first (sort cubes > #:key third)))
 
   ; Expand the surface from that point and calculate the area
   (apply + (areas (list->set cubes) (surface (list->set cubes) (above surface-cube)))))
