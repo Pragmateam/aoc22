@@ -24,13 +24,6 @@
 
   (make-hash (map parse-line (string-split (file->string input) "\n"))))
 
-(define (monkey-eval monkeys m)
-  (match (hash-ref monkeys m)
-    ; Just yell out a number
-    [(? number? n) n]
-    ; Do an operation
-    [`(,op ,a ,b) (eval `(,op ,(monkey-eval monkeys a) ,(monkey-eval monkeys b)))]))
-
 (define (monkey-expression monkeys m)
   (match (hash-ref monkeys m)
     ['x 'x]
