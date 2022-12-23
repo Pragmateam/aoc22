@@ -31,10 +31,6 @@
     [`(,op ,a ,b) `(,op ,(monkey-expression monkeys a)
                         ,(monkey-expression monkeys b))]))
 
-(define (split-expression expr)
-  (match expr
-    [`(,op ,a ,b) (values op a b)]))
-
 (define (contains-x? expr)
   (match expr
     [(? number? _) #f]
@@ -48,16 +44,13 @@
   (match expr
     [`(= x ,expr) expr]
     [`(= ,a ,b)
-     (let-values ([(op in1 in2) (split-expression a)])
+     (match-let ([`(,op ,in1 ,in2) a])
        (if (contains-x? in1)
            (closed-form-solution
             `(= ,in1 (,(invert-operation op) ,b ,in2)))
            (cond
              ; Those are not commutative
-             [(equal? op '-)
-              (closed-form-solution
-               `(= ,in2 (,op ,in1 ,b)))]
-             [(equal? op '/)
+             [(member op '(- /))
               (closed-form-solution
                `(= ,in2 (,op ,in1 ,b)))]
              [else
