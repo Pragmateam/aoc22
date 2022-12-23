@@ -1,7 +1,8 @@
 #lang racket
 
 (require racket/file
-         racket/string)
+         racket/string
+         rackunit)
 
 (define (parse input)
   (map string->number (string-split (file->string input) "\n")))
@@ -164,10 +165,10 @@
 
   (for ([i (range (length leaves))])
    (let* ([leaf (list-ref leaves i)]
-	  [index (leaf-index leaf)]
-	  [new-index index]
-	  [index-inc (+ new-index (tree-leaf-value leaf))]
-	  [index-mod (modulo index-inc (sub1 (length leaves)))])
+          [index (leaf-index leaf)]
+          [new-index index]
+          [index-inc (+ new-index (tree-leaf-value leaf))]
+          [index-mod (modulo index-inc (sub1 (length leaves)))])
 
     ; Move a single leaf
     (tree-remove! leaf)
@@ -186,5 +187,7 @@
   (define c (list-ref lst (modulo (+ zero 3000) (length lst))))
 
   (+ a b c))
+
+(check-equal? (solution "test/1") 3)
 
 (solution "input")
