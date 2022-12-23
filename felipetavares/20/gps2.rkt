@@ -1,7 +1,8 @@
 #lang racket
 
 (require racket/file
-         racket/string)
+         racket/string
+         ffi/unsafe)
 
 (define (parse input)
   (map string->number (string-split (file->string input) "\n")))
@@ -33,7 +34,7 @@
 (define (tree-from-leaves lst parent)
   (if (= (length lst) 1)
       (let ([leaf (first lst)])
-        (set-tree-leaf-parent! leaf parent)
+        (set-tree-parent! leaf parent)
         leaf)
       (let* ([node (tree-node parent 0 (void) (void))]
              [l (quotient (length lst) 2)]
@@ -62,35 +63,41 @@
     [(? tree-node? node)
      (set-tree-node-n! node (+ delta (tree-node-n node)))
      (propagate-sum! (tree-node-parent node) delta)]
-    [_ (void)]))
+    [(? void? _) (void)]))
 
 (define (set-tree-parent! tree parent)
-  (match tree
-    [(? tree-node? node) (set-tree-node-parent! node parent)]
-    [(? tree-leaf? leaf) (set-tree-leaf-parent! leaf parent)]))
+  (cond
+    [(tree-node? tree) (set-tree-node-parent! tree parent)]
+    [(tree-leaf? tree) (set-tree-leaf-parent! tree parent)]
+    [else (displayln "This should not happen")]))
 
 (define (tree-remove! leaf)
   ; Make the parent equal its other child
-  (if (equal? (tree-node-left (tree-leaf-parent leaf)) leaf)
+  (if (eq? (tree-node-left (tree-leaf-parent leaf)) leaf)
       ; I am the left child
-      (begin
-        (if (equal? (tree-node-left (tree-leaf-grandparent leaf)) (tree-leaf-parent leaf))
+      (let* ([parent (tree-leaf-parent leaf)]
+             [other (tree-node-right parent)]
+             [grandpa (tree-leaf-grandparent leaf)])
+        (set-tree-parent! other grandpa)
+        (if (eq? (tree-node-left grandpa) parent)
             ; Parent is left child
-            (set-tree-node-left! (tree-leaf-grandparent leaf) (tree-node-right (tree-leaf-parent leaf)))
+            (set-tree-node-left! grandpa other)
             ; Parent is right child
-            (set-tree-node-right! (tree-leaf-grandparent leaf) (tree-node-right (tree-leaf-parent leaf)))
+            (set-tree-node-right! grandpa other)
             )
-        (set-tree-parent! (tree-node-right (tree-leaf-parent leaf)) (tree-leaf-grandparent leaf)))
+        )
       ; I am the right child
-      (begin
-        (if (equal? (tree-node-left (tree-leaf-grandparent leaf)) (tree-leaf-parent leaf))
+      (let* ([parent (tree-leaf-parent leaf)]
+             [other (tree-node-left parent)]
+             [grandpa (tree-leaf-grandparent leaf)])
+        (set-tree-parent! other grandpa)
+        (if (eq? (tree-node-left grandpa) parent)
             ; Parent is left child
-            (set-tree-node-left! (tree-leaf-grandparent leaf) (tree-node-left (tree-leaf-parent leaf)))
+            (set-tree-node-left! grandpa other)
             ; Parent is right child
-            (set-tree-node-right! (tree-leaf-grandparent leaf) (tree-node-left (tree-leaf-parent leaf)))
+            (set-tree-node-right! grandpa other)
             )
-        (set-tree-parent! (tree-node-left (tree-leaf-parent leaf)) (tree-leaf-grandparent leaf)))
-      )
+        ))
 
   ; Subtract 1 from n in the grandparent and up
   (propagate-sum! (tree-leaf-grandparent leaf) -1)
@@ -111,19 +118,17 @@
             [new-node (if (<= index low-left)
                           (tree-node parent 2 leaf tree)
                           (tree-node parent 2 tree leaf))])
-       (if (equal? (tree-node-left parent) tree)
+       ; Set parents
+       (set-tree-parent! leaf new-node)
+       (set-tree-parent! tree new-node)
+       (cond
+         [(eq? (tree-node-left parent) tree)
            ; I'm the left child
-           (begin
-             (set-tree-node-left! parent new-node)
-             (set-tree-leaf-parent! leaf new-node)
-             (set-tree-leaf-parent! tree new-node))
+           (set-tree-node-left! parent new-node)]
+         [(eq? (tree-node-right parent) tree)
            ; I'm the right child
-           (begin
-             (set-tree-node-right! parent new-node)
-             (set-tree-leaf-parent! leaf new-node)
-             (set-tree-leaf-parent! tree new-node))
-           )
-
+           (set-tree-node-right! parent new-node)]
+         [else (displayln "This should never happen")])
        ; Add 1 to the parent and all above
        (propagate-sum! parent 1)
        )
@@ -137,14 +142,14 @@
      (if (void? (tree-node-parent tree))
          ; I'm the root
          (sub1 (tree-n tree))
-         (if (equal? (tree-node-left (tree-node-parent tree)) tree)
+         (if (eq? (tree-node-left (tree-node-parent tree)) tree)
              ; I'm left
              (- (leaf-index (tree-node-parent tree)) (tree-n (tree-node-right (tree-node-parent tree))))
              ; I'm right
              (leaf-index (tree-node-parent tree))
              ))]
     [(struct tree-leaf _)
-     (if (equal? (tree-node-left (tree-leaf-parent tree)) tree)
+     (if (eq? (tree-node-left (tree-leaf-parent tree)) tree)
          ; I'm left
          (- (leaf-index (tree-leaf-parent tree)) (tree-n (tree-node-right (tree-leaf-parent tree))))
          ; I'm right
@@ -154,28 +159,70 @@
     )
   )
 
+(define (incorrect-parents? tree parent)
+  (match tree
+    [(struct tree-node _)
+     (or
+      (not (eq? (tree-node-parent tree) parent))
+      (incorrect-parents? (tree-node-left tree) tree)
+      (incorrect-parents? (tree-node-right tree) tree))]
+    [(struct tree-leaf _)
+     (let ([incorrect (not (eq? (tree-leaf-parent tree) parent))])
+       incorrect)]))
+
+(define (fix-parents tree parent (fixed (set)))
+  (match tree
+    [(struct tree-node _)
+     (set-tree-parent! tree parent)
+     (fix-parents (tree-node-left tree) tree)
+     (fix-parents (tree-node-right tree) tree)
+     ]
+    [(struct tree-leaf _)
+     (set-tree-parent! tree parent)]))
+
 (define (has-leaf? node)
   (or (tree-leaf? (tree-node-right node))
       (tree-leaf? (tree-node-left node))))
 
 (define (solution input)
-  (define tree (tree-from-list (parse input) (void)))
+  (define tree (tree-from-list (map (lambda (n) (* n 811589153)) (parse input)) (void)))
   (define leaves (tree-leaves tree))
 
-  (for ([i (range (length leaves))])
-   (let* ([leaf (list-ref leaves i)]
-	  [index (leaf-index leaf)]
-	  [new-index index]
-	  [index-inc (+ new-index (tree-leaf-value leaf))]
-	  [index-mod (modulo index-inc (sub1 (length leaves)))])
+  (for ([j (range 10)])
+    (displayln "----")
+    (for ([i (range (length leaves))])
+      (let* ([leaf (list-ref leaves i)]
+             [index (leaf-index leaf)]
+             [new-index index]
+             [index-inc (+ new-index (tree-leaf-value leaf))]
+             [index-mod (modulo index-inc (sub1 (length leaves)))])
+        (displayln (format "Moving ~a which has index ~a -> ~a" (tree-leaf-value leaf) index index-mod))
+        ;(displayln (format "The new index is ~a" index-mod))
+        ;(displayln (map tree-leaf-value (tree-leaves tree)))
+        ;(when (not (equal? (length (tree-leaves tree)) (sub1 (length leaves))))
+        ;  (displayln "Failed to remove"))
+        ; (fix-parents tree (void))
+        (when (not (= (tree-leaf-value leaf) 0))
+          (tree-remove! leaf)
+          (tree-insert! tree leaf index-mod 0))
+        ; (fix-parents tree (void))
+        ; (when (incorrect-parents? tree (void))
+        ;   (displayln (format "Incorrect after inserting! ~a" (tree-leaf-value leaf))))
+        ;(displayln (map tree-leaf-value (tree-leaves tree)))
 
-    ; Move a single leaf
-    (tree-remove! leaf)
-    (tree-insert! tree leaf index-mod 0)
+        ; (when (incorrect-parents? tree (void))
+        ;   (displayln (format "Incorrect parents at it ~a, ~a" j i))
+        ;   (displayln (format "Moving ~a which has index ~a" (equal-hash-code (tree-leaf-parent leaf)) index))
+        ;   (displayln (format "The new index is ~a" index-mod))
+        ;   (fix-parents tree (void)))
 
-    ; Rebalance
-    (when (has-leaf? tree)
-     (set! tree (tree-from-leaves (tree-leaves tree) (void))))))
+         (when (has-leaf? tree)
+           (set! tree (tree-from-leaves (tree-leaves tree) (void))))
+        )
+
+      ; (displayln (map tree-leaf-value (tree-leaves tree)))
+      )
+    )
 
   (define lst (map tree-leaf-value (tree-leaves tree)))
 
