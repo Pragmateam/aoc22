@@ -2,7 +2,7 @@
 
 (require racket/file
          racket/string
-         ffi/unsafe)
+         rackunit)
 
 (define (parse input)
   (map string->number (string-split (file->string input) "\n")))
@@ -123,11 +123,11 @@
        (set-tree-parent! tree new-node)
        (cond
          [(eq? (tree-node-left parent) tree)
-           ; I'm the left child
-           (set-tree-node-left! parent new-node)]
+          ; I'm the left child
+          (set-tree-node-left! parent new-node)]
          [(eq? (tree-node-right parent) tree)
-           ; I'm the right child
-           (set-tree-node-right! parent new-node)]
+          ; I'm the right child
+          (set-tree-node-right! parent new-node)]
          [else (displayln "This should never happen")])
        ; Add 1 to the parent and all above
        (propagate-sum! parent 1)
@@ -155,30 +155,7 @@
          ; I'm right
          (leaf-index (tree-leaf-parent tree))
          )]
-    [_ 0]
-    )
-  )
-
-(define (incorrect-parents? tree parent)
-  (match tree
-    [(struct tree-node _)
-     (or
-      (not (eq? (tree-node-parent tree) parent))
-      (incorrect-parents? (tree-node-left tree) tree)
-      (incorrect-parents? (tree-node-right tree) tree))]
-    [(struct tree-leaf _)
-     (let ([incorrect (not (eq? (tree-leaf-parent tree) parent))])
-       incorrect)]))
-
-(define (fix-parents tree parent (fixed (set)))
-  (match tree
-    [(struct tree-node _)
-     (set-tree-parent! tree parent)
-     (fix-parents (tree-node-left tree) tree)
-     (fix-parents (tree-node-right tree) tree)
-     ]
-    [(struct tree-leaf _)
-     (set-tree-parent! tree parent)]))
+    [_ 0]))
 
 (define (has-leaf? node)
   (or (tree-leaf? (tree-node-right node))
@@ -186,52 +163,36 @@
 
 (define (solution input)
   (define tree (tree-from-list (map (lambda (n) (* n 811589153)) (parse input)) (void)))
+  ; Keep track of the leaves so we can always iterate in the same order
   (define leaves (tree-leaves tree))
 
-  (for ([j (range 10)])
-    (displayln "----")
+  (for ([_ (range 10)])
     (for ([i (range (length leaves))])
       (let* ([leaf (list-ref leaves i)]
              [index (leaf-index leaf)]
-             [new-index index]
-             [index-inc (+ new-index (tree-leaf-value leaf))]
-             [index-mod (modulo index-inc (sub1 (length leaves)))])
-        (displayln (format "Moving ~a which has index ~a -> ~a" (tree-leaf-value leaf) index index-mod))
-        ;(displayln (format "The new index is ~a" index-mod))
-        ;(displayln (map tree-leaf-value (tree-leaves tree)))
-        ;(when (not (equal? (length (tree-leaves tree)) (sub1 (length leaves))))
-        ;  (displayln "Failed to remove"))
-        ; (fix-parents tree (void))
+             [index-mod (modulo (+ index (tree-leaf-value leaf))
+                                (sub1 (length leaves)))])
+
+        ; Move the number
         (when (not (= (tree-leaf-value leaf) 0))
           (tree-remove! leaf)
           (tree-insert! tree leaf index-mod 0))
-        ; (fix-parents tree (void))
-        ; (when (incorrect-parents? tree (void))
-        ;   (displayln (format "Incorrect after inserting! ~a" (tree-leaf-value leaf))))
-        ;(displayln (map tree-leaf-value (tree-leaves tree)))
 
-        ; (when (incorrect-parents? tree (void))
-        ;   (displayln (format "Incorrect parents at it ~a, ~a" j i))
-        ;   (displayln (format "Moving ~a which has index ~a" (equal-hash-code (tree-leaf-parent leaf)) index))
-        ;   (displayln (format "The new index is ~a" index-mod))
-        ;   (fix-parents tree (void)))
+        ; Rebalance
+        (when (has-leaf? tree)
+          (set! tree (tree-from-leaves (tree-leaves tree) (void)))))))
 
-         (when (has-leaf? tree)
-           (set! tree (tree-from-leaves (tree-leaves tree) (void))))
-        )
+  ; tree->list
+  (define mixed-list (map tree-leaf-value (tree-leaves tree)))
+  ; find the pivot
+  (define zero-index (index-of mixed-list 0))
 
-      ; (displayln (map tree-leaf-value (tree-leaves tree)))
-      )
-    )
+  (let ([len (length mixed-list)])
+    (+
+     (list-ref mixed-list (modulo (+ zero-index 1000) len))
+     (list-ref mixed-list (modulo (+ zero-index 2000) len))
+     (list-ref mixed-list (modulo (+ zero-index 3000) len)))))
 
-  (define lst (map tree-leaf-value (tree-leaves tree)))
-
-  (define zero (index-of lst 0))
-
-  (define a (list-ref lst (modulo (+ zero 1000) (length lst))))
-  (define b (list-ref lst (modulo (+ zero 2000) (length lst))))
-  (define c (list-ref lst (modulo (+ zero 3000) (length lst))))
-
-  (+ a b c))
+(check-equal? (solution "test/1") 1623178306)
 
 (solution "input")
