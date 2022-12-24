@@ -102,56 +102,6 @@
     (values (add1 (apply max (map vec-x pos-list)))
             (add1 (apply max (map vec-y pos-list))))))
 
-(define (column-min-max positions col height)
-  (define min-y 0)
-  (define max-y 0)
-
-  (for ([y (range height)])
-    #:final (set-member? positions (vec col y))
-    (set! min-y y))
-
-  (for ([y (reverse (range height))])
-    #:final (set-member? positions (vec col y))
-    (set! max-y y))
-
-  (values min-y max-y))
-
-(define (row-min-max positions row width)
-  (define min-x 0)
-  (define max-x 0)
-
-  (for ([x (range width)])
-    #:final (set-member? positions (vec x row))
-    (set! min-x x))
-
-  (for ([x (reverse (range width))])
-    #:final (set-member? positions (vec x row))
-    (set! max-x x))
-
-  (values min-x max-x))
-
-(define (wormholes positions)
-  (define-values (w h) (bounding-box positions))
-  (define wormholes (make-hash))
-
-  ; For each column
-  (for ([x (range w)])
-    (let-values ([(min-y max-y) (column-min-max positions x h)])
-      ; Going up
-      (hash-set! wormholes (cons (vec x min-y) up) (vec x max-y))
-      ; Going down
-      (hash-set! wormholes (cons (vec x max-y) down) (vec x min-y))))
-
-  ; For each row
-  (for ([y (range h)])
-    (let-values ([(min-x max-x) (row-min-max positions y w)])
-      ; Going left
-      (hash-set! wormholes (cons (vec min-x y) left) (vec max-x y))
-      ; Going right
-      (hash-set! wormholes (cons (vec max-x y) right) (vec min-x y))))
-
-  wormholes)
-
 (define (rotate n v)
   (hash-ref num->dir (modulo (+ n (hash-ref dir->num v)) 4)))
 
