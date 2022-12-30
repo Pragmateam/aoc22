@@ -1,6 +1,6 @@
 const path = require('path')
 const { partOne, partTwo } = require("./code");
-const { readInput } = require("../../fileReader/fileReader");
+const { readInput } = require("../fileReader/fileReader");
 
 const day = 04
 const input = readInput(path.join(__dirname, "/input.txt"))

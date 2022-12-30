@@ -11,7 +11,6 @@ const parseInput = (input) => {
   const monkeyInputs = input.split('\n\n')
   const monkeys = monkeyInputs.map(val => parseMonkeyInput(val))
   supermodulo = monkeys.reduce((prev, monkey) => prev * monkey.divisibleBy, 1)
-  console.log(supermodulo)
   return monkeys
 }
 
@@ -35,10 +34,6 @@ const parseMonkeyInput = (monkeyInput) => {
 const playXRounds = (rounds, monkeys) => {
   for (let round = 0; round < rounds; round++) {
     playRound(monkeys)
-    if ([1, 20, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000].includes(round + 1)) {
-      // console.log(round + 1, monkeys.map(monkey => monkey.itemsInpected))
-      console.log(round + 1, monkeys)
-    }
   }
 }
 

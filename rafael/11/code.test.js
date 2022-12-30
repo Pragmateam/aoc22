@@ -89,8 +89,3 @@ test('should inspect the next item', () => {
   expect(monkey.itemsInpected).toEqual(1)
 })
 
-// test('should play a monkey turn', () => {
-//   const monkeys = parseInput(testInput)
-//   playMonkeyTurn(0, monkeys)
-//   console.log(monkeys)
-// })

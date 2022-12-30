@@ -159,7 +159,6 @@ test('should return 13140', () => {
 
 test('should have 4 pairs with some overlap', () => {
   const result = partTwo(testInput)
-  console.log(result)
 })
 
 //================================================

@@ -56,7 +56,6 @@ const moveHeader = (direction, logs) => {
 
 const moveTail = (logs) => {
   const diff = [logs[0][0] - logs[9][0], logs[0][1] - logs[9][1]]
-  // console.log(diff)
   if (Math.abs(diff[0]) > 1 || Math.abs(diff[1]) > 1) {
     const xMove = Math.sign(diff[0])
     const yMove = Math.sign(diff[1])
